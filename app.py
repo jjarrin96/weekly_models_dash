@@ -12,11 +12,6 @@ def cargar_datos():
 
 df = cargar_datos()
 
-duplicados = df['modelo_id'].value_counts()
-st.write("Duplicados exactos por fecha y variable:", duplicados)
-
-
-
 # Sidebar de filtros
 st.sidebar.header("Filtros de Modelo")
 
