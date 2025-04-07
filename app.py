@@ -13,6 +13,7 @@ def cargar_datos():
 df = cargar_datos()
 
 df_check = df[df["modelo_id"] == "p4_q3_SVF1_SVI0"]
+df_check = df_check[df['variable'] == "PIB_Semanal"]
 duplicados = df_check[df_check.duplicated(subset=["Time", "variable"], keep=False)]
 st.write("Duplicados exactos por fecha y variable:", duplicados)
 
