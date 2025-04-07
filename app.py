@@ -12,6 +12,17 @@ def cargar_datos():
 
 df = cargar_datos()
 
+# Diagnóstico para un modelo específico
+modelo_problema = "p4_q3_SVF1_SVI0"
+df_test = df[(df["modelo_id"] == modelo_problema) & (df["variable"] == "PIB_Semanal")]
+
+st.subheader(f"Diagnóstico rápido: {modelo_problema}")
+st.write("Valores iniciales:", df_test.sort_values("Time").head(10))
+st.write("Valores finales:", df_test.sort_values("Time").tail(10))
+st.write("Cantidad de NaN en 'value':", df_test["value"].isna().sum())
+st.write("Fechas duplicadas:", df_test["Time"].duplicated().sum())
+
+
 # Sidebar de filtros
 st.sidebar.header("Filtros de Modelo")
 
