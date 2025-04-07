@@ -12,15 +12,10 @@ def cargar_datos():
 
 df = cargar_datos()
 
-# Diagnóstico para un modelo específico
-modelo_problema = "p4_q3_SVF1_SVI0"
-df_test = df[(df["modelo_id"] == modelo_problema) & (df["variable"] == "PIB_Semanal")]
+df_check = df[df["modelo_id"] == "p4_q3_SVF1_SVI0"]
+duplicados = df_check[df_check.duplicated(subset=["Time", "variable"], keep=False)]
+st.write("Duplicados exactos por fecha y variable:", duplicados)
 
-st.subheader(f"Diagnóstico rápido: {modelo_problema}")
-st.write("Valores iniciales:", df_test.sort_values("Time").head(10))
-st.write("Valores finales:", df_test.sort_values("Time").tail(10))
-st.write("Cantidad de NaN en 'value':", df_test["value"].isna().sum())
-st.write("Fechas duplicadas:", df_test["Time"].duplicated().sum())
 
 
 # Sidebar de filtros
