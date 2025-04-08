@@ -13,28 +13,46 @@ def cargar_datos():
 df = cargar_datos()
 
 # Sidebar de filtros
+
 st.sidebar.header("Filtros de Modelo")
 
-# Filtros dinámicos
-p_vals = st.sidebar.multiselect("Parámetro p", sorted(df["p"].unique()), default=sorted(df["p"].unique()))
-q_vals = st.sidebar.multiselect("Parámetro q", sorted(df["q"].unique()), default=sorted(df["q"].unique()))
-svf_vals = st.sidebar.multiselect("SVF", sorted(df["SVF"].unique()), default=sorted(df["SVF"].unique()))
-svi_vals = st.sidebar.multiselect("SVI", sorted(df["SVI"].unique()), default=sorted(df["SVI"].unique()))
-variables = st.sidebar.multiselect("Variable", sorted(df["variable"].unique()), default=["PIB_Semanal"])
+# Valores únicos
+p_opciones = sorted(df["p"].unique())
+q_opciones = sorted(df["q"].unique())
+svf_opciones = sorted(df["SVF"].unique())
+svi_opciones = sorted(df["SVI"].unique())
+variables_opciones = sorted(df["variable"].unique())
 
-# Filtrar el DataFrame
-df_filtrado = df[
-    (df["p"].isin(p_vals)) &
-    (df["q"].isin(q_vals)) &
-    (df["SVF"].isin(svf_vals)) &
-    (df["SVI"].isin(svi_vals)) &
-    (df["variable"].isin(variables))
-]
+# Definir valores por defecto "inteligentes"
+p_vals = st.sidebar.multiselect("Parámetro p", p_opciones, default=p_opciones)
+q_vals = st.sidebar.multiselect("Parámetro q", q_opciones, default=q_opciones)
+svf_vals = st.sidebar.multiselect("SVF", svf_opciones, default=[0, 1] if set([0, 1]).issubset(svf_opciones) else svf_opciones)
+svi_vals = st.sidebar.multiselect("SVI", svi_opciones, default=[0, 1] if set([0, 1]).issubset(svi_opciones) else svi_opciones)
+variables = st.sidebar.multiselect("Variable", variables_opciones, default=["PIB_Semanal"])
 
-# Selector de modelos (máximo 10 para gráficas individuales)
-modelos_seleccionados = st.sidebar.multiselect("Seleccionar modelos específicos (máx 10)", 
-                                               sorted(df_filtrado["modelo_id"].unique()), 
-                                               default=sorted(df_filtrado["modelo_id"].unique())[:3])
+# Aplicar filtros SOLO si el usuario cambia la selección
+df_filtrado = df.copy()
+if p_vals and set(p_vals) != set(p_opciones):
+    df_filtrado = df_filtrado[df_filtrado["p"].isin(p_vals)]
+if q_vals and set(q_vals) != set(q_opciones):
+    df_filtrado = df_filtrado[df_filtrado["q"].isin(q_vals)]
+if svf_vals and set(svf_vals) != set(svf_opciones):
+    df_filtrado = df_filtrado[df_filtrado["SVF"].isin(svf_vals)]
+if svi_vals and set(svi_vals) != set(svi_opciones):
+    df_filtrado = df_filtrado[df_filtrado["SVI"].isin(svi_vals)]
+if variables:
+    df_filtrado = df_filtrado[df_filtrado["variable"].isin(variables)]
+
+# Obtener modelos disponibles
+modelos_disponibles = sorted(df_filtrado["modelo_id"].unique())
+
+# Selector de modelos con todos los que cumplen los criterios seleccionados
+modelos_seleccionados = st.sidebar.multiselect(
+    "Seleccionar modelos específicos (máx 10 para vista desagregada)",
+    opciones := modelos_disponibles,
+    default=opciones[:10]
+)
+
 
 # === GRÁFICO AGRUPADO ===
 st.subheader("Gráfico Agrupado por Modelo")
@@ -47,17 +65,29 @@ fig = px.line(
 st.plotly_chart(fig, use_container_width=True)
 
 # === BOTÓN PARA MOSTRAR DESAGREGADO ===
-if st.checkbox("Mostrar gráficos desagregados por modelo"):
-    st.subheader("Gráficos individuales")
-    for modelo in modelos_seleccionados:
-        st.markdown(f"**Modelo: {modelo}**")
-        for var in variables:
-            df_tmp = df_filtrado[(df_filtrado["modelo_id"] == modelo) & (df_filtrado["variable"] == var)]
-            fig_tmp = px.line(df_tmp, x="Time", y="value", title=f"{var} – {modelo}")
-            st.plotly_chart(fig_tmp, use_container_width=True)
+st.subheader("Gráfico Agrupado por Modelo")
 
-# === MOSTRAR DATOS RAW (opcional) ===
-if st.checkbox("Mostrar tabla de datos"):
-    st.dataframe(df_filtrado)
+if modelos_seleccionados:
+    fig = px.line(
+        df_filtrado[df_filtrado["modelo_id"].isin(modelos_seleccionados)],
+        x="Time", y="value", color="modelo_id", line_dash="variable",
+        title="Evolución de variables por modelo seleccionado"
+    )
+    st.plotly_chart(fig, use_container_width=True)
     
+       # === BOTÓN PARA MOSTRAR DESAGREGADO ===
+    if st.checkbox("Mostrar gráficos desagregados por modelo"):
+        st.subheader("Gráficos individuales")
+        for modelo in modelos_seleccionados:
+            st.markdown(f"**Modelo: {modelo}**")
+            for var in variables:
+                df_tmp = df_filtrado[(df_filtrado["modelo_id"] == modelo) & (df_filtrado["variable"] == var)]
+                fig_tmp = px.line(df_tmp, x="Time", y="value", title=f"{var} – {modelo}")
+                st.plotly_chart(fig_tmp, use_container_width=True)
+
+    # === MOSTRAR DATOS RAW (opcional) ===
+    if st.checkbox("Mostrar tabla de datos"):
+        st.dataframe(df_filtrado)
+        
+            
     
