@@ -39,7 +39,7 @@ svi_vals = st.sidebar.multiselect("SVI", svi_unicos, default=svi_unicos)
 if not svi_vals:
     svi_vals = svi_unicos
 
-# Filtro principal
+# Filtrado principal (sin variable, se manejarán individualmente)
 df_filtrado = df[
     (df["p"].isin(p_vals)) &
     (df["q"].isin(q_vals)) &
@@ -52,12 +52,12 @@ modelos_disponibles = sorted(df_filtrado["modelo_id"].unique())
 modelos_seleccionados = st.sidebar.multiselect(
     "Seleccionar modelos específicos (máx 10)",
     modelos_disponibles, 
-    default=modelos_disponibles[:3]  # ejemplo: primeros 3
+    default=modelos_disponibles[:3]
 )
 if not modelos_seleccionados:
     modelos_seleccionados = modelos_disponibles[:3]
 
-# Selector en el sidebar para elegir si se graficará PIB Semanal o Consumo Semanal
+# Selector en el sidebar para el 2do gráfico (PIB o Consumo)
 st.sidebar.subheader("Segundo gráfico:")
 opcion_2 = st.sidebar.radio(
     "Comparar:",
@@ -69,11 +69,11 @@ st.title("Dashboard de Modelos DFM")
 
 # === GRÁFICO 1: SOLO FACTOR ===
 st.subheader("Gráfico 1: Variable Factor (por modelo)")
+
 df_factor = df_filtrado[
     (df_filtrado["variable"] == "Factor") & 
     (df_filtrado["modelo_id"].isin(modelos_seleccionados))
 ]
-
 if not df_factor.empty:
     fig_factor = px.line(
         df_factor,
@@ -101,21 +101,18 @@ df_mod_modeled = df_filtrado[
     (df_filtrado["variable"] == var_modeled) & 
     (df_filtrado["modelo_id"].isin(modelos_seleccionados))
 ]
-
-# Serie observada (quitamos duplicados para no multiplicarla por modelo)
 df_mod_observed = df_filtrado[
-    df_filtrado["variable"] == var_observed
+    (df_filtrado["variable"] == var_observed)
 ].drop_duplicates(subset=["Time"], keep="first")
 
-# Opcional: eliminar filas con NaN en 'value' para la serie observada
+# Quitamos NaN de la serie observada para evitar problemas de visualización
 df_mod_observed = df_mod_observed.dropna(subset=["value"])
 
 fig2 = go.Figure()
 
 # Trazas para cada modelo (líneas)
 for modelo in modelos_seleccionados:
-    df_tmp = df_mod_modeled[df_mod_modeled["modelo_id"] == modelo]
-    df_tmp = df_tmp.dropna(subset=["value"])  # por si hay NaN en los valores modelados
+    df_tmp = df_mod_modeled[df_mod_modeled["modelo_id"] == modelo].dropna(subset=["value"])
     if not df_tmp.empty:
         fig2.add_trace(go.Scatter(
             x=df_tmp["Time"],
@@ -124,13 +121,13 @@ for modelo in modelos_seleccionados:
             name=f"{var_modeled} - {modelo}"
         ))
 
-# Trazas para la serie observada (sólo marcadores, sin líneas)
+# Trazas para la serie observada (sólo marcadores)
 if not df_mod_observed.empty:
     fig2.add_trace(go.Scatter(
         x=df_mod_observed["Time"],
         y=df_mod_observed["value"],
-        mode='markers',        # sólo puntos
-        connectgaps=False,     # no une los huecos
+        mode='markers',
+        connectgaps=False,
         marker_symbol='x',
         marker_color='black',
         name=f"{var_observed} (Observado)"
@@ -161,20 +158,43 @@ if 1 in svf_vals:
 else:
     st.info("No se muestra VolFactor_Mean porque no se eligió SVF=1 en el filtro.")
 
-# === GRÁFICOS DESAGREGADOS (opcional) ===
-if st.checkbox("Mostrar gráficos desagregados por modelo"):
-    st.subheader("Gráficos individuales por modelo y variable (filtros actuales)")
-    for modelo in modelos_seleccionados:
-        st.markdown(f"**Modelo: {modelo}**")
-        df_mod = df_filtrado[df_filtrado["modelo_id"] == modelo]
-        for var in sorted(df_mod["variable"].unique()):
-            df_tmp = df_mod[df_mod["variable"] == var]
-            fig_tmp = px.line(
-                df_tmp, x="Time", y="value",
-                title=f"{var} – {modelo}"
-            )
-            st.plotly_chart(fig_tmp, use_container_width=True)
+# === GRÁFICO 4: 1 - probabilities ===
+st.subheader("Gráfico 4: 1 - probabilities")
 
-# === TABLA DE DATOS (opcional) ===
-if st.checkbox("Mostrar tabla de datos filtrados"):
-    st.dataframe(df_filtrado)
+# Filtramos la variable 'probabilities' (ajusta si se llama distinto en tu DataFrame)
+df_prob = df_filtrado[
+    (df_filtrado["variable"] == "probabilities") &
+    (df_filtrado["modelo_id"].isin(modelos_seleccionados))
+].copy()
+
+if not df_prob.empty:
+    # Calculamos el valor a graficar: 1 - probabilities
+    df_prob["value_plot"] = 1 - df_prob["value"]
+
+    fig_prob = px.line(
+        df_prob,
+        x="Time", y="value_plot",
+        color="modelo_id",
+        title="Evolución de (1 - probabilities)"
+    )
+    st.plotly_chart(fig_prob, use_container_width=True)
+else:
+    st.info("No hay datos para la variable 'probabilities' en los filtros seleccionados.")
+
+# === GRÁFICOS DESAGREGADOS (Factor y SuperFactor) en panel ===
+if st.checkbox("Mostrar gráficos desagregados por modelo (Factor y SuperFactor)"):
+    st.subheader("Gráficos individuales (en panel)")
+
+    # Variables a mostrar en los gráficos desagregados
+    variables_desagregadas = ["Factor", "SuperFactor"]
+
+    for modelo in modelos_seleccionados:
+        st.markdown(f"### Modelo: {modelo}")
+
+        # Filtramos para el modelo y variables de interés
+        df_mod = df_filtrado[
+            (df_filtrado["modelo_id"] == modelo) &
+            (df_filtrado["variable"].isin(variables_desagregadas))
+        ]
+        vars_presentes = sorted(df_mod["variable"].unique())
+        if
