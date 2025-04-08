@@ -12,8 +12,20 @@ def cargar_datos():
 
 df = cargar_datos()
 
-# Sidebar de filtros
+# === FUNCIÓN DE MULTISELECT CON 'SELECCIONAR TODO' ===
+def multiselect_con_todo(label, opciones, seleccionadas_por_defecto=None):
+    seleccionar_todo = "Seleccionar todo"
+    opciones_modificadas = [seleccionar_todo] + opciones
+    default = [seleccionar_todo] + (seleccionadas_por_defecto or opciones)
 
+    seleccion = st.sidebar.multiselect(label, opciones_modificadas, default=default)
+
+    if seleccionar_todo in seleccion:
+        return opciones, True
+    else:
+        return seleccion, set(seleccion) == set(opciones)
+
+# === Sidebar de filtros ===
 st.sidebar.header("Filtros de Modelo")
 
 # Valores únicos
@@ -23,22 +35,22 @@ svf_opciones = sorted(df["SVF"].unique())
 svi_opciones = sorted(df["SVI"].unique())
 variables_opciones = sorted(df["variable"].unique())
 
-# Definir valores por defecto "inteligentes"
-p_vals = st.sidebar.multiselect("Parámetro p", p_opciones, default=p_opciones)
-q_vals = st.sidebar.multiselect("Parámetro q", q_opciones, default=q_opciones)
-svf_vals = st.sidebar.multiselect("SVF", svf_opciones, default=[0, 1] if set([0, 1]).issubset(svf_opciones) else svf_opciones)
-svi_vals = st.sidebar.multiselect("SVI", svi_opciones, default=[0, 1] if set([0, 1]).issubset(svi_opciones) else svi_opciones)
-variables = st.sidebar.multiselect("Variable", variables_opciones, default=["PIB_Semanal"])
+# Aplicar filtros con opción "Seleccionar todo" y check para saber si hay que filtrar
+p_vals, p_all = multiselect_con_todo("Parámetro p", p_opciones)
+q_vals, q_all = multiselect_con_todo("Parámetro q", q_opciones)
+svf_vals, svf_all = multiselect_con_todo("SVF", svf_opciones)
+svi_vals, svi_all = multiselect_con_todo("SVI", svi_opciones)
+variables, _ = multiselect_con_todo("Variable", variables_opciones, seleccionadas_por_defecto=["PIB_Semanal"])
 
-# Aplicar filtros SOLO si el usuario cambia la selección
+# Filtrado condicional del DataFrame
 df_filtrado = df.copy()
-if p_vals and set(p_vals) != set(p_opciones):
+if not p_all:
     df_filtrado = df_filtrado[df_filtrado["p"].isin(p_vals)]
-if q_vals and set(q_vals) != set(q_opciones):
+if not q_all:
     df_filtrado = df_filtrado[df_filtrado["q"].isin(q_vals)]
-if svf_vals and set(svf_vals) != set(svf_opciones):
+if not svf_all:
     df_filtrado = df_filtrado[df_filtrado["SVF"].isin(svf_vals)]
-if svi_vals and set(svi_vals) != set(svi_opciones):
+if not svi_all:
     df_filtrado = df_filtrado[df_filtrado["SVI"].isin(svi_vals)]
 if variables:
     df_filtrado = df_filtrado[df_filtrado["variable"].isin(variables)]
@@ -46,25 +58,14 @@ if variables:
 # Obtener modelos disponibles
 modelos_disponibles = sorted(df_filtrado["modelo_id"].unique())
 
-# Selector de modelos con todos los que cumplen los criterios seleccionados
+# Selector de modelos
 modelos_seleccionados = st.sidebar.multiselect(
     "Seleccionar modelos específicos (máx 10 para vista desagregada)",
     opciones := modelos_disponibles,
     default=opciones[:10]
 )
 
-
 # === GRÁFICO AGRUPADO ===
-st.subheader("Gráfico Agrupado por Modelo")
-
-fig = px.line(
-    df_filtrado[df_filtrado["modelo_id"].isin(modelos_seleccionados)],
-    x="Time", y="value", color="modelo_id", line_dash="variable",
-    title="Evolución de variables por modelo seleccionado"
-)
-st.plotly_chart(fig, use_container_width=True)
-
-# === BOTÓN PARA MOSTRAR DESAGREGADO ===
 st.subheader("Gráfico Agrupado por Modelo")
 
 if modelos_seleccionados:
@@ -74,8 +75,8 @@ if modelos_seleccionados:
         title="Evolución de variables por modelo seleccionado"
     )
     st.plotly_chart(fig, use_container_width=True)
-    
-       # === BOTÓN PARA MOSTRAR DESAGREGADO ===
+
+    # === BOTÓN PARA MOSTRAR DESAGREGADO ===
     if st.checkbox("Mostrar gráficos desagregados por modelo"):
         st.subheader("Gráficos individuales")
         for modelo in modelos_seleccionados:
@@ -88,6 +89,5 @@ if modelos_seleccionados:
     # === MOSTRAR DATOS RAW (opcional) ===
     if st.checkbox("Mostrar tabla de datos"):
         st.dataframe(df_filtrado)
-        
-            
-    
+else:
+    st.warning("No hay modelos disponibles con los filtros seleccionados.")
