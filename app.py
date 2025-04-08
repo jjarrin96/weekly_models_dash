@@ -197,4 +197,25 @@ if st.checkbox("Mostrar gráficos desagregados por modelo (Factor y SuperFactor)
             (df_filtrado["variable"].isin(variables_desagregadas))
         ]
         vars_presentes = sorted(df_mod["variable"].unique())
-        if
+        if len(vars_presentes) == 0:
+            st.info(f"No hay datos de {variables_desagregadas} para el modelo {modelo}.")
+            continue
+
+        # Mostramos en un grid de 3 columnas
+        num_cols = 3
+        for i in range(0, len(vars_presentes), num_cols):
+            cols = st.columns(num_cols)  # Crea una fila con 3 columnas
+            bloque_vars = vars_presentes[i : i + num_cols]
+            for j, var in enumerate(bloque_vars):
+                df_tmp = df_mod[df_mod["variable"] == var]
+                fig_tmp = px.line(
+                    df_tmp,
+                    x="Time", y="value",
+                    title=f"{var} – Modelo {modelo}"
+                )
+                with cols[j]:
+                    st.plotly_chart(fig_tmp, use_container_width=True)
+
+# === TABLA DE DATOS (opcional) ===
+if st.checkbox("Mostrar tabla de datos filtrados"):
+    st.dataframe(df_filtrado)
