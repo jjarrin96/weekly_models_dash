@@ -116,12 +116,10 @@ def show_dashboard():
         (df_filtrado["variable"] == var_modeled) & 
         (df_filtrado["modelo_id"].isin(modelos_seleccionados))
     ]
-    df_mod_observed = df_observed[
-        (df_observed["variable"] == var_observed)
-    ]
+    df_mod_observed = df_observed[var_observed]
 
     # Quitamos NaN de la serie observada para evitar problemas
-    df_mod_observed = df_mod_observed.dropna(subset=["value"])
+    # df_mod_observed = df_mod_observed.dropna(subset=["value"])
 
     fig2 = go.Figure()
 
@@ -140,7 +138,7 @@ def show_dashboard():
     if not df_mod_observed.empty:
         fig2.add_trace(go.Scatter(
             x=df_mod_observed["Time"],
-            y=df_mod_observed["value"],
+            y=df_mod_observed[var_observed],
             mode='markers',
             connectgaps=False,
             marker_symbol='x',
