@@ -116,6 +116,7 @@ def show_dashboard():
         (df_filtrado["variable"] == var_modeled) & 
         (df_filtrado["modelo_id"].isin(modelos_seleccionados))
     ]
+    
     df_mod_observed = df_observed[var_observed]
 
     # Quitamos NaN de la serie observada para evitar problemas
@@ -229,7 +230,7 @@ def show_dashboard():
 
     # === TABLA DE DATOS (opcional) ===
     if st.checkbox("Mostrar tabla de datos filtrados"):
-        st.dataframe(df_filtrado)
+        st.dataframe(df_observed)
 
 # --- Función de la página "Convergencia" ---
 def show_convergence():
