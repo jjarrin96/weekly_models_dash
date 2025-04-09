@@ -10,7 +10,12 @@ st.set_page_config(layout="wide")
 def cargar_datos():
     return pd.read_csv("models.csv", parse_dates=["Time"])
 
+@st.cache_data
+def cargar_observed():
+    return pd.read_csv("observed.csv", parse_dates=["Time"])
+
 df = cargar_datos()
+df_observed = cargar_observed()
 
 # --- SIDEBAR DE NAVEGACIÓN ---
 st.sidebar.title("Navegación")
@@ -98,11 +103,11 @@ def show_dashboard():
     # === GRÁFICO 2: PIB/Consumo SEMANAL (Modelado) vs Observado ===
     if opcion_2 == "PIB Semanal":
         var_modeled = "PIB_Semanal"     # Modelado por cada modelo
-        var_observed = "PIB"           # Observado (mismo para todos)
+        var_observed = "PIB_Observado"           # Observado (mismo para todos)
         titulo_2 = "PIB"
     else:
         var_modeled = "Consumo_Semanal"
-        var_observed = "consumo_hogares"
+        var_observed = "Consumo_Observado"
         titulo_2 = "Consumo"
 
     st.subheader(f"Gráfico 2: {var_modeled} (modelado) vs {var_observed} (observado)")
@@ -111,9 +116,9 @@ def show_dashboard():
         (df_filtrado["variable"] == var_modeled) & 
         (df_filtrado["modelo_id"].isin(modelos_seleccionados))
     ]
-    df_mod_observed = df_filtrado[
-        (df_filtrado["variable"] == var_observed)
-    ].drop_duplicates(subset=["Time"], keep="first")
+    df_mod_observed = df_observed[
+        (df_observed["variable"] == var_observed)
+    ]
 
     # Quitamos NaN de la serie observada para evitar problemas
     df_mod_observed = df_mod_observed.dropna(subset=["value"])
