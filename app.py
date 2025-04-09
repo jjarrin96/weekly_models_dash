@@ -117,7 +117,7 @@ def show_dashboard():
         (df_filtrado["modelo_id"].isin(modelos_seleccionados))
     ]
     
-    df_mod_observed = df_observed[var_observed]
+    df_mod_observed = df_observed.copy()
 
     # Quitamos NaN de la serie observada para evitar problemas
     # df_mod_observed = df_mod_observed.dropna(subset=["value"])
