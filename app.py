@@ -72,6 +72,14 @@ def show_dashboard():
     if not modelos_seleccionados:
         modelos_seleccionados = modelos_disponibles[:3]
 
+
+    # selector para el grafico de factor
+    st.sidebar.subheader("Gráfico de Factor:")
+    opcion_1 = st.sidebar.radio(
+        "Mostrar:",
+        ("Factor", "SuperFactor")
+    )
+    
     # Selector en el sidebar para el 2do gráfico (PIB o Consumo)
     st.sidebar.subheader("Segundo gráfico:")
     opcion_2 = st.sidebar.radio(
@@ -84,9 +92,14 @@ def show_dashboard():
 
     # === GRÁFICO 1: SOLO FACTOR ===
     st.subheader("Gráfico 1: Variable Factor (por modelo)")
-
+    
+    if opcion_1 == "Factor":
+        variable = "Factor"
+    else:
+        variable = "SuperFactor"
+    
     df_factor = df_filtrado[
-        (df_filtrado["variable"] == "Factor") & 
+        (df_filtrado["variable"] == variable) & 
         (df_filtrado["modelo_id"].isin(modelos_seleccionados))
     ]
     if not df_factor.empty:
@@ -94,7 +107,7 @@ def show_dashboard():
             df_factor,
             x="Time", y="value",
             color="modelo_id",
-            title="Evolución de la Variable Factor"
+            title="Evolución del {variable} (por modelo)"
         )
         st.plotly_chart(fig_factor, use_container_width=True)
     else:
