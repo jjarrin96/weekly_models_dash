@@ -74,7 +74,7 @@ def show_dashboard():
 
 
     # selector para el grafico de factor
-    st.sidebar.subheader("Gráfico de Factor:")
+    st.sidebar.subheader("Variables primer gráfico:")
     opcion_1 = st.sidebar.radio(
         "Mostrar:",
         ("Factor", "SuperFactor")
