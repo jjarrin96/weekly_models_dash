@@ -107,7 +107,7 @@ def show_dashboard():
             df_factor,
             x="Time", y="value",
             color="modelo_id",
-            title="Evolución del {variable} (por modelo)"
+            title=f"Evolución del {variable} (por modelo)"
         )
         st.plotly_chart(fig_factor, use_container_width=True)
     else:
